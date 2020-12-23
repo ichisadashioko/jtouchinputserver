@@ -4,19 +4,9 @@ This program will be the `SocketServer` and wait for clients to connect.
 
 The client will first need to send some metadata information to server to identify the connected client.
 
-We will need client to send the following information.
+We are not going to care about the device width and height information because touch position (x and y) is going to be stored in 2 bytes only and scaled between (0-255). Because of that we are going to retrieve the aspect ratio only. For example: 16x9 or 4:3
 
-```
-- width
-- height
-```
-
-- one byte to indicate number of bytes to store an integer data for the width data
-- x byte(s) in big-endian (BE) format
-- one byte to indicate number of bytes to store an integer data for the height data
-- x byte(s) in big-endian (BE) format
-
-TODO create write up about endianness used in this project
+Client will need to send 2 bytes upon the connection is established. The client aspect ratio will be calculated by divide the first byte to the second byte. These two bytes must not be zeroes.
 
 Now the client will wait for commands from the server.
 
@@ -36,3 +26,5 @@ Each touch input data will be packed into a 4 bytes package.
 - The fourth byte stores the y-axis position of the touch. It is also used the above formula to calculate the value.
 
 ~~The client should starts a separated thread for reading data from the server with timeout. After the timeout, if there is no data then the client should continue their current job.~~
+
+TODO deal with network timeout problem
