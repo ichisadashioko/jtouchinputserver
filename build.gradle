@@ -5,9 +5,18 @@ plugins {
 group 'io.github.ichisadashioko.jtouchinputserver'
 version '0.0.1'
 
+sourceCompatibility = JavaVersion.VERSION_1_7
+targetCompatibility = JavaVersion.VERSION_1_7
+
 repositories {
     mavenCentral()
 }
 
 dependencies {
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'io.github.ichisadashioko.jtouchinputserver.Main'
+    }
 }

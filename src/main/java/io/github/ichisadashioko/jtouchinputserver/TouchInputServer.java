@@ -6,7 +6,7 @@ import java.util.*;
 
 public class TouchInputServer extends Thread {
     public static final int DEFAULT_SO_TIMEOUT = 100;
-    public static final long DEFAULT_PAUSE_AND_CHECK_TO_CONTINUE_TIMEOUT = 1000;
+    public static final long DEFAULT_PAUSE_AND_CHECK_TO_CONTINUE_TIMEOUT = 1000L;
 
     public int port;
     public ServerSocket serverSocket;
