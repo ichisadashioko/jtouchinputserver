@@ -1,10 +1,9 @@
 package io.github.ichisadashioko.jtouchinputserver;
 
-import java.net.Socket;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.IOException;
 import java.net.InetAddress;
+import java.net.Socket;
 import java.net.SocketTimeoutException;
 
 public class TouchInputClientHandler extends Thread {
@@ -50,12 +49,13 @@ public class TouchInputClientHandler extends Thread {
             // DEBUG
             ex.printStackTrace(System.err);
             throw new Exception(
-                    "Client was too slow to send data about the number of bytes to store the device width aspect ratio!");
+                    "Client was too slow to send data about the device aspect ratio width!");
         }
 
         if (intBuffer < 1) {
             throw new Exception(
-                    "Client did not send any data about the number of bytes to store the device width aspect ratio!");
+                    "Received invalid aspect ratio with! It must be greater than one! Received value: "
+                            + intBuffer);
         }
 
         this.clientWidth = intBuffer;

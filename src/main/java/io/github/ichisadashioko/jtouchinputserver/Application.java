@@ -24,12 +24,13 @@ public class Application extends Frame {
         this.portNumberTextField = new TextField(Integer.toString(DEFAULT_PORT));
         this.startServerButton = new Button("start server");
 
-        this.startServerButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                System.out.println(e);
-            }
-        });
+        this.startServerButton.addActionListener(
+                new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        System.out.println(e);
+                    }
+                });
 
         GridLayout gridLayout = new GridLayout(2, 2);
         this.setLayout(gridLayout);

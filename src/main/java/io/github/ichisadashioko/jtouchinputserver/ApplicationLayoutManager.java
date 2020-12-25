@@ -3,19 +3,13 @@ package io.github.ichisadashioko.jtouchinputserver;
 import java.awt.*;
 
 public class ApplicationLayoutManager implements LayoutManager {
-    public ApplicationLayoutManager(){
-
-    }
+    public ApplicationLayoutManager() {}
 
     @Override
-    public void addLayoutComponent(String name, Component comp) {
-
-    }
+    public void addLayoutComponent(String name, Component comp) {}
 
     @Override
-    public void removeLayoutComponent(Component comp) {
-
-    }
+    public void removeLayoutComponent(Component comp) {}
 
     @Override
     public Dimension preferredLayoutSize(Container parent) {
@@ -28,7 +22,5 @@ public class ApplicationLayoutManager implements LayoutManager {
     }
 
     @Override
-    public void layoutContainer(Container parent) {
-
-    }
+    public void layoutContainer(Container parent) {}
 }

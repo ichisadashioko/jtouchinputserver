@@ -1,7 +1,7 @@
 package io.github.ichisadashioko.jtouchinputserver;
 
-import java.net.*;
 import java.io.*;
+import java.net.*;
 import java.util.*;
 
 public class TouchInputServer extends Thread {
