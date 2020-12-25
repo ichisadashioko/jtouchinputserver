@@ -54,7 +54,7 @@ public class TouchInputClientHandler extends Thread {
 
         if (intBuffer < 1) {
             throw new Exception(
-                    "Received invalid aspect ratio with! It must be greater than one! Received value: "
+                    "Received invalid aspect ratio width value! It must be greater than one! Received value: "
                             + intBuffer);
         }
 
