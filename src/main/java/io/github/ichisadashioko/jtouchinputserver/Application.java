@@ -5,16 +5,18 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.net.ServerSocket;
 
-public class Application extends Frame {
+import javax.swing.*;
+
+public class Application extends JFrame {
     public static final String DEFAULT_TITLE = "JTouch Input Server";
     public static final int DEFAULT_WIDTH = 640;
     public static final int DEFAULT_HEIGHT = 480;
     public static final Color DEFAULT_BACKGROUND_COLOR = Color.BLACK;
     public static final int DEFAULT_PORT = 0;
 
-    public TextField portNumberTextField;
+    public JTextField portNumberTextField;
     public boolean isServerRunning;
-    public Button startServerButton;
+    public JButton startServerButton;
     public Canvas touchInputCanvas;
     public Choice clientCombobox;
 
@@ -23,7 +25,7 @@ public class Application extends Frame {
     public Application() {
         super(DEFAULT_TITLE);
         this.setSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
-        // this.setResizable(false);
+        this.setResizable(false);
         // this.setBackground(DEFAULT_BACKGROUND_COLOR);
         this.setLocationRelativeTo(null);
         this.setLayout(null);
@@ -31,8 +33,8 @@ public class Application extends Frame {
         this.server = null;
 
         this.isServerRunning = false;
-        this.portNumberTextField = new TextField(Integer.toString(DEFAULT_PORT));
-        this.startServerButton = new Button("start server");
+        this.portNumberTextField = new JTextField(Integer.toString(DEFAULT_PORT));
+        this.startServerButton = new JButton("start server");
         this.touchInputCanvas = new Canvas();
         this.clientCombobox = new Choice();
 

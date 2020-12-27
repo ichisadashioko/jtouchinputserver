@@ -6,3 +6,4 @@ bin
 .project
 build
 gradle-wrapper.jar
+.vscode
