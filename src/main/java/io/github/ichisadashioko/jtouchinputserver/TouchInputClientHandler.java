@@ -1,5 +1,6 @@
 package io.github.ichisadashioko.jtouchinputserver;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
@@ -10,19 +11,37 @@ public class TouchInputClientHandler extends Thread {
 
     public static final int DEFAULT_INITIALIZING_COMMUNICATION_TIMEOUT = 5000;
 
-    public Socket clientSocket;
+    public Socket socket;
 
+    /**
+     * If this object is not initialized, then all the other members expect for `socket` are invalid
+     * and should not be used.
+     */
     public boolean isInitialized;
+
     public int clientWidth;
     public int clientHeight;
+
+    /**
+     * When handling this object, if IOException is thrown, that would mean the client has
+     * disconnected. You have the responsibility to set this member to `true`.
+     */
     public boolean isDisconnected;
 
     public InputStream inputStream;
     public OutputStream outputStream;
     public InetAddress clientAddress;
 
-    public TouchInputClientHandler(Socket clientSocket) {
-        this.clientSocket = clientSocket;
+    /**
+     * You should be the one responsible to attach an appropriate event listener before "running"
+     * this object.
+     */
+    public TouchInputClientEventListener listener;
+
+    public TouchInputClientHandler(Socket socket) {
+        super();
+
+        this.socket = socket;
         this.isInitialized = false;
         this.clientWidth = -1;
         this.clientHeight = -1;
@@ -30,15 +49,16 @@ public class TouchInputClientHandler extends Thread {
         this.outputStream = null;
         this.clientAddress = null;
         this.isDisconnected = false;
+        this.listener = null;
     }
 
     public void initialize() throws Exception {
-        this.clientAddress = this.clientSocket.getInetAddress();
-        this.inputStream = this.clientSocket.getInputStream();
-        this.outputStream = this.clientSocket.getOutputStream();
+        this.clientAddress = this.socket.getInetAddress();
+        this.inputStream = this.socket.getInputStream();
+        this.outputStream = this.socket.getOutputStream();
 
         // ask the client about their device's dimension
-        this.clientSocket.setSoTimeout(DEFAULT_INITIALIZING_COMMUNICATION_TIMEOUT);
+        // this.socket.setSoTimeout(DEFAULT_INITIALIZING_COMMUNICATION_TIMEOUT);
 
         // TODO read two bytes at once
         // byte[] dimensionBuffer = new byte[2];
@@ -93,9 +113,46 @@ public class TouchInputClientHandler extends Thread {
         this.isInitialized = true;
     }
 
+    public void cleanResources() {
+        if (this.inputStream != null) {
+            try {
+                this.inputStream.close();
+            } catch (IOException ex) {
+                System.err.println("Failed to close inputStream!");
+                ex.printStackTrace(System.err);
+            }
+
+            this.inputStream = null;
+        }
+
+        if (this.outputStream != null) {
+            try {
+                this.outputStream.close();
+            } catch (IOException ex) {
+                System.err.println("Failed to close outputStream!");
+                ex.printStackTrace(System.err);
+            }
+
+            this.outputStream = null;
+        }
+
+        if (this.socket != null) {
+            if (!this.socket.isClosed()) {
+                try {
+                    this.socket.close();
+                } catch (IOException ex) {
+                    System.err.println("Failed to close the socket!");
+                    ex.printStackTrace(System.err);
+                }
+            }
+        }
+
+        this.isDisconnected = true;
+    }
+
     public void run() {
         try {
-            initialize();
+            this.initialize();
         } catch (Exception e) {
             e.printStackTrace(System.err);
         }
