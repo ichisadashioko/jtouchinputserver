@@ -18,13 +18,27 @@ The server can send one of these commands (stored in a single byte).
 - Stop: tell the client to disconnect
 ```
 
-Each touch input data will be packed into a 4 bytes package.
+## Each touch input data will be packed into a 1-3 bytes package.
 
-- The first byte stores the "ID" of the touch (for supporting multi-touch device).
-- The second byte stores the "state" of the touch (down/move/up).
-- The third byte stores the x-axis position of the touch. This value is calculated by this formula - `(touch_x_position / device_width) * 255` - and is rounded as a byte (`0-255`) value.
-- The fourth byte stores the y-axis position of the touch. It is also used the above formula to calculate the value.
+__The 1st byte__
 
-~~The client should starts a separated thread for reading data from the server with timeout. After the timeout, if there is no data then the client should continue their current job.~~
+```
+87654321
+││││││└┴──── touch input event type (0 - touch down, 1 - touch up, 2 - touch move, 3 - invalid for now)
+|||||└────── is the x-axis data greater than 0 (to deal with one off error and reduce bandwidth)
+||||└─────── is the y-axis data greater than 0
+└┴┴┴──────── the touch ID (support up to 16 unique touches)
+```
 
-TODO deal with network timeout problem
+If the x-axis data bit in the 1st byte (the 2nd bit) is set to 1 then there is a following byte to store the x-axis data.
+
+If the y-axis data bit in the 1st byte (the 3rd bit) is set to 1 then there is a following byte to store the y-axis data.
+
+If both the x-axis bit and the y-axis bit are both set to 1 then the byte which stores x-axis data, will come before the byte which stores the y-axis data.
+
+If the touch's axes data is not equal 0 then they are calculated using this formula:
+
+```
+x_axis = (byte) ((x_position * 256) / device_width)
+y_axis = (byte) ((y_position * 256) / device_height)
+```
