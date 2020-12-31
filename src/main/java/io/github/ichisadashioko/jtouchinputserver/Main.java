@@ -1,9 +1,85 @@
 package io.github.ichisadashioko.jtouchinputserver;
 
+import java.awt.Canvas;
+import java.awt.Color;
+import java.awt.Graphics;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Random;
+
+class Point2D {
+    public int x;
+    public int y;
+}
+
+class CustomCanvas extends Canvas {
+    public int width_aspect_ratio;
+    public int height_aspect_ratio;
+    // public float aspectRatio;
+    public ArrayList<ArrayList<Point2D>> strokes;
+
+    @Override
+    public void paint(Graphics g) {
+        // TODO Auto-generated method stub
+        super.paint(g);
+
+        // TODO cache scaling operations
+        int componentWidth = this.getWidth();
+        int componentHeight = this.getHeight();
+
+        float widthScale = ((float) componentWidth) / ((float) this.width_aspect_ratio);
+        float heightScale = ((float) componentHeight) / ((float) this.height_aspect_ratio);
+
+        float scale = Math.min(widthScale, heightScale);
+
+        int scaledWidth = (int) (componentWidth * scale);
+        int scaledHeight = (int) (componentHeight * scale);
+
+        int offsetX = (componentWidth - scaledWidth) / 2;
+        int offsetY = (componentHeight - scaledHeight) / 2;
+
+        float scaleXTmp = scaledWidth / 256.0f;
+        float scaleYTmp = scaledHeight / 256.0f;
+
+        Random rand = new Random();
+
+        int numStrokes = this.strokes.size();
+
+        for (int i = 0; i < numStrokes; i++) {
+            int red = rand.nextInt(256);
+            int green = rand.nextInt(256);
+            int blue = rand.nextInt(256);
+            Color color = new Color(red, green, blue);
+            g.setColor(color);
+
+            ArrayList<Point2D> stroke = strokes.get(i);
+            int numTouches = stroke.size();
+
+            if (numTouches < 2) {
+                // skip a single point stroke
+                continue;
+            }
+
+            Point2D previousPoint = stroke.get(0);
+
+            for (int j = 1; j < numTouches; j++) {
+                Point2D currentPoint = stroke.get(j);
+
+                int scaledPreviousX = ((int) (previousPoint.x * scaleXTmp)) + offsetX;
+                int scaledPreviousY = (int) (previousPoint.y * scaleYTmp) + offsetY;
+
+                int scaledCurrentX = (int) (currentPoint.x * scaleXTmp) + offsetX;
+                int scaledCurrentY = (int) (currentPoint.y * scaleYTmp) + offsetY;
+                g.drawLine(scaledPreviousX, scaledPreviousY, scaledCurrentX, scaledCurrentY);
+
+                previousPoint = currentPoint;
+            }
+        }
+    }
+}
 
 public class Main {
     public static void main(String[] args) throws Exception {
