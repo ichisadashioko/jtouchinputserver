@@ -2,6 +2,7 @@ package io.github.ichisadashioko.jtouchinputserver;
 
 import java.awt.Canvas;
 import java.awt.Color;
+import java.awt.Frame;
 import java.awt.Graphics;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -83,6 +84,9 @@ class CustomCanvas extends Canvas {
 
 public class Main {
     public static void main(String[] args) throws Exception {
+
+        ArrayList<ArrayList<Point2D>> strokes = new ArrayList<>();
+
         ServerSocket serverSocket = new ServerSocket(9090);
 
         Socket clientSocket = serverSocket.accept();
@@ -97,6 +101,23 @@ public class Main {
         System.out.println("height_aspect_ratio: " + Integer.toString(height_aspect_ratio));
 
         outputStream.write(ServerCommands.START);
+
+        Frame frame = new Frame("jtouchintpuserver");
+
+        CustomCanvas canvas = new CustomCanvas();
+        canvas.width_aspect_ratio = width_aspect_ratio;
+        canvas.height_aspect_ratio = height_aspect_ratio;
+        canvas.strokes = strokes;
+
+        canvas.setSize(640, 480);
+
+        frame.add(canvas);
+
+        frame.setSize(640, 480);
+        frame.setVisible(true);
+
+        ArrayList<Point2D> currentStroke = new ArrayList<>();
+        strokes.add(currentStroke);
 
         while (true) {
             int intBuffer = inputStream.read();
@@ -122,6 +143,19 @@ public class Main {
             System.out.println("touch_id: " + Integer.toString(touch_id));
             System.out.println("x_axis_data: " + Integer.toString(x_axis_data));
             System.out.println("y_axis_data: " + Integer.toString(y_axis_data));
+
+            Point2D touchPos = new Point2D();
+            touchPos.x = x_axis_data;
+            touchPos.y = y_axis_data;
+
+            if (touch_event_type == TouchEvents.TOUCH_DOWN) {
+                currentStroke.add(touchPos);
+            } else if (touch_event_type == TouchEvents.TOUCH_MOVE) {
+                currentStroke.add(touchPos);
+            } else if (touch_event_type == TouchEvents.TOUCH_UP) {
+                currentStroke = new ArrayList<>();
+                strokes.add(currentStroke);
+            }
         }
 
         serverSocket.close();
