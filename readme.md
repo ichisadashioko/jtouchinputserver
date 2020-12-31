@@ -39,6 +39,6 @@ If both the x-axis bit and the y-axis bit are both set to 1 then the byte which 
 If the touch's axes data is not equal 0 then they are calculated using this formula:
 
 ```
-x_axis = (byte) ((x_position * 256) / device_width)
-y_axis = (byte) ((y_position * 256) / device_height)
+x_axis = (byte) (((x_position * 256) / device_width) - 1)
+y_axis = (byte) (((y_position * 256) / device_height) - 1)
 ```
