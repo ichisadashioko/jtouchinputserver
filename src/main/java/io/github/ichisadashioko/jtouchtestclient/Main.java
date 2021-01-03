@@ -7,43 +7,40 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Random;
 
 public class Main {
 
-    public static ArrayList<TouchData> generateStroke(
-            Random rand, int length, int width, int height) {
-        ArrayList<TouchData> retval = new ArrayList<>(length + 2);
+    public static ArrayList<TouchData> generateStroke() {
+        int deviceWidth = 1920;
+        int deviceHeight = 1080;
+        ArrayList<TouchData> retval = new ArrayList<>();
 
         TouchData touchDown = new TouchData();
-        touchDown.deviceWidth = width;
-        touchDown.deviceHeight = height;
+        touchDown.deviceWidth = deviceWidth;
+        touchDown.deviceHeight = deviceHeight;
         touchDown.touchEventType = TouchEvents.TOUCH_DOWN;
         touchDown.touchId = 0;
-        touchDown.touchX = rand.nextInt(width + 1);
-        touchDown.touchY = rand.nextInt(height + 1);
-
+        touchDown.touchX = 0;
+        touchDown.touchY = 0;
         retval.add(touchDown);
 
-        for (int i = 0; i < length; i++) {
-            TouchData touchMove = new TouchData();
-            touchMove.deviceWidth = width;
-            touchMove.deviceHeight = height;
-            touchMove.touchEventType = TouchEvents.TOUCH_MOVE;
-            touchMove.touchId = 0;
-            touchMove.touchX = rand.nextInt(width + 1);
-            touchMove.touchY = rand.nextInt(height + 1);
+        TouchData touchMove = new TouchData();
+        touchMove.deviceWidth = deviceWidth;
+        touchMove.deviceHeight = deviceHeight;
+        touchMove.touchEventType = TouchEvents.TOUCH_MOVE;
+        touchMove.touchId = 0;
+        touchMove.touchX = 1920;
+        touchMove.touchY = 1080;
 
-            retval.add(touchMove);
-        }
+        retval.add(touchMove);
 
         TouchData touchUp = new TouchData();
-        touchUp.deviceWidth = width;
-        touchUp.deviceHeight = height;
+        touchUp.deviceWidth = deviceWidth;
+        touchUp.deviceHeight = deviceHeight;
         touchUp.touchEventType = TouchEvents.TOUCH_UP;
         touchUp.touchId = 0;
-        touchUp.touchX = rand.nextInt(width + 1);
-        touchUp.touchY = rand.nextInt(height + 1);
+        touchUp.touchX = 1920;
+        touchUp.touchY = 1080;
 
         retval.add(touchUp);
 
@@ -53,12 +50,8 @@ public class Main {
     public static void main(String[] args) throws Exception {
         final ArrayList<ArrayList<TouchData>> strokes = new ArrayList<>();
 
-        Random rand = new Random(0);
-
-        for (int i = 0; i < 10; i++) {
-            ArrayList<TouchData> stroke = generateStroke(rand, 10, 1920, 1080);
-            strokes.add(stroke);
-        }
+        ArrayList<TouchData> stroke = generateStroke();
+        strokes.add(stroke);
 
         Socket socket = new Socket("127.0.0.1", 9090);
 
