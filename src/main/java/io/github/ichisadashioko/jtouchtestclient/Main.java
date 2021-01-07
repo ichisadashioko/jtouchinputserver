@@ -142,6 +142,8 @@ public class Main {
                                 } catch (Exception ex) {
                                     ex.printStackTrace(System.err);
                                 }
+
+                                System.exit(0);
                             }
                         });
 

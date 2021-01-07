@@ -9,6 +9,7 @@ import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.Random;
 
 class Point2D {
@@ -16,67 +17,195 @@ class Point2D {
     public int y;
 }
 
+class CustomCanvasState {
+    public int componentWidth;
+    public int componentHeight;
+    public int renderWidth;
+    public int renderHeight;
+    public float scale;
+    public int renderOffsetX;
+    public int renderOffsetY;
+    public float scaleTmpX;
+    public float scaleTmpY;
+    public ArrayList<ArrayList<Point2D>> scaledStrokes;
+    public ArrayList<Color> strokeColors;
+
+    public CustomCanvasState() {
+        this.componentWidth = 0;
+        this.componentHeight = 0;
+        this.renderWidth = 0;
+        this.renderHeight = 0;
+        this.renderOffsetX = 0;
+        this.renderOffsetY = 0;
+        this.scale = 0f;
+        this.scaleTmpX = 0f;
+        this.scaleTmpY = 0f;
+        this.scaledStrokes = new ArrayList<>();
+        this.strokeColors = new ArrayList<>();
+    }
+}
+
 class CustomCanvas extends Canvas {
-    public int width_aspect_ratio;
-    public int height_aspect_ratio;
-    // public float aspectRatio;
+    public int widthAspectRatio;
+    public int heightAspectRatio;
     public ArrayList<ArrayList<Point2D>> strokes;
+    public CustomCanvasState componentState;
+    public Random rand;
 
-    @Override
-    public void paint(Graphics g) {
-        // TODO Auto-generated method stub
-        super.paint(g);
+    public CustomCanvas() {
+        super();
+        this.componentState = new CustomCanvasState();
+        this.rand = new Random();
+        this.widthAspectRatio = 1;
+        this.heightAspectRatio = 1;
+    }
 
-        // TODO cache scaling operations
+    public Color generateColor() {
+        int red = rand.nextInt(256);
+        int green = rand.nextInt(256);
+        int blue = rand.nextInt(256);
+        Color color = new Color(red, green, blue);
+        return color;
+    }
+
+    public void addNewPoint(Point2D point2d) {
+        ArrayList<Point2D> currentStroke = null;
+        int numStrokes = this.strokes.size();
+        if (numStrokes == 0) {
+            currentStroke = new ArrayList<>();
+            this.strokes.add(currentStroke);
+        } else {
+            currentStroke = this.strokes.get(numStrokes - 1);
+        }
+
+        ArrayList<Point2D> currentScaledStroke = null;
+        int numScaledStrokes = this.componentState.scaledStrokes.size();
+        if (numScaledStrokes == 0) {
+            currentScaledStroke = new ArrayList<>();
+            this.componentState.scaledStrokes.add(currentScaledStroke);
+        } else {
+            currentScaledStroke = this.componentState.scaledStrokes.get(numScaledStrokes - 1);
+        }
+
+        if (this.componentState.strokeColors.size() == 0) {
+            this.componentState.strokeColors.add(this.generateColor());
+        }
+
+        Point2D scaledPoint = new Point2D();
+        scaledPoint.x = (int) (this.componentState.scaleTmpX * point2d.x);
+        scaledPoint.y = (int) (this.componentState.scaleTmpY * point2d.y);
+
+        currentScaledStroke.add(scaledPoint);
+    }
+
+    public void addNewStroke(Point2D point2d) {
+        ArrayList<Point2D> newStroke = new ArrayList<>();
+        newStroke.add(point2d);
+        this.strokes.add(newStroke);
+
+        ArrayList<Point2D> newScaledStroke = new ArrayList<>();
+        Point2D scaledPoint = new Point2D();
+        scaledPoint.x = (int) (this.componentState.scaleTmpX * point2d.x);
+        scaledPoint.y = (int) (this.componentState.scaleTmpY * point2d.y);
+        newScaledStroke.add(scaledPoint);
+        this.componentState.scaledStrokes.add(newScaledStroke);
+
+        this.componentState.strokeColors.add(this.generateColor());
+    }
+
+    public void setAspectRatio(int widthAspectRatio, int heightAspectRatio) {
+        this.widthAspectRatio = widthAspectRatio;
+        this.heightAspectRatio = heightAspectRatio;
+        this.refreshState();
+    }
+
+    public void setStrokes(ArrayList<ArrayList<Point2D>> strokes) {
+        this.strokes = strokes;
+        this.refreshState();
+    }
+
+    public void refreshState() {
         int componentWidth = this.getWidth();
         int componentHeight = this.getHeight();
 
-        float widthScale = ((float) componentWidth) / ((float) this.width_aspect_ratio);
-        float heightScale = ((float) componentHeight) / ((float) this.height_aspect_ratio);
+        this.componentState.componentWidth = componentWidth;
+        this.componentState.componentHeight = componentHeight;
 
-        float scale = Math.min(widthScale, heightScale);
+        float widthScale = ((float) componentWidth) / ((float) this.widthAspectRatio);
+        float heightScale = ((float) componentHeight) / ((float) this.heightAspectRatio);
 
-        int scaledWidth = (int) (componentWidth * scale);
-        int scaledHeight = (int) (componentHeight * scale);
+        this.componentState.scale = Math.min(widthScale, heightScale);
 
-        int offsetX = (componentWidth - scaledWidth) / 2;
-        int offsetY = (componentHeight - scaledHeight) / 2;
+        this.componentState.renderWidth = (int) (componentWidth * this.componentState.scale);
+        this.componentState.renderHeight = (int) (componentHeight * this.componentState.scale);
 
-        float scaleXTmp = scaledWidth / 256.0f;
-        float scaleYTmp = scaledHeight / 256.0f;
+        this.componentState.renderOffsetX = (componentWidth - this.componentState.renderWidth) / 2;
+        this.componentState.renderOffsetY = (componentHeight - this.componentState.renderWidth) / 2;
 
-        Random rand = new Random();
+        this.componentState.scaleTmpX = this.componentState.renderWidth / 256f;
+        this.componentState.scaleTmpY = this.componentState.renderHeight / 256f;
 
-        int numStrokes = this.strokes.size();
+        this.componentState.scaledStrokes = new ArrayList<>();
+        this.componentState.strokeColors = new ArrayList<>();
 
-        for (int i = 0; i < numStrokes; i++) {
-            int red = rand.nextInt(256);
-            int green = rand.nextInt(256);
-            int blue = rand.nextInt(256);
-            Color color = new Color(red, green, blue);
-            g.setColor(color);
+        Iterator<ArrayList<Point2D>> strokeIterator = this.strokes.iterator();
 
-            ArrayList<Point2D> stroke = strokes.get(i);
-            int numTouches = stroke.size();
+        while (strokeIterator.hasNext()) {
+            Color color = this.generateColor();
+            this.componentState.strokeColors.add(color);
 
-            if (numTouches < 2) {
-                // skip a single point stroke
+            ArrayList<Point2D> stroke = strokeIterator.next();
+            Iterator<Point2D> pointIterator = stroke.iterator();
+            ArrayList<Point2D> scaledStroke = new ArrayList<>();
+
+            while (pointIterator.hasNext()) {
+                Point2D point2d = pointIterator.next();
+                Point2D scaledPoint = new Point2D();
+                scaledPoint.x =
+                        ((int) (point2d.x * this.componentState.scaleTmpX))
+                                + this.componentState.renderOffsetX;
+                scaledPoint.y =
+                        ((int) (point2d.y * this.componentState.scaleTmpY))
+                                + this.componentState.renderOffsetY;
+
+                scaledStroke.add(scaledPoint);
+            }
+
+            this.componentState.scaledStrokes.add(scaledStroke);
+        }
+    }
+
+    @Override
+    public void paint(Graphics g) {
+        super.paint(g);
+
+        int componentWidth = this.getWidth();
+        int componentHeight = this.getHeight();
+
+        if ((componentWidth != this.componentState.componentWidth)
+                || (componentHeight != this.componentState.componentHeight)) {
+            this.refreshState();
+        }
+
+        Iterator<ArrayList<Point2D>> strokeIter = this.componentState.scaledStrokes.iterator();
+        Iterator<Color> colorIter = this.componentState.strokeColors.iterator();
+
+        while (strokeIter.hasNext() && colorIter.hasNext()) {
+            Color strokeColor = colorIter.next();
+            ArrayList<Point2D> stroke = strokeIter.next();
+            if (stroke.size() < 2) {
                 continue;
             }
 
-            Point2D previousPoint = stroke.get(0);
+            g.setColor(strokeColor);
 
-            for (int j = 1; j < numTouches; j++) {
-                Point2D currentPoint = stroke.get(j);
+            Iterator<Point2D> pointIter = stroke.iterator();
+            Point2D prevPoint = pointIter.next();
 
-                int scaledPreviousX = ((int) (previousPoint.x * scaleXTmp)) + offsetX;
-                int scaledPreviousY = (int) (previousPoint.y * scaleYTmp) + offsetY;
-
-                int scaledCurrentX = (int) (currentPoint.x * scaleXTmp) + offsetX;
-                int scaledCurrentY = (int) (currentPoint.y * scaleYTmp) + offsetY;
-                g.drawLine(scaledPreviousX, scaledPreviousY, scaledCurrentX, scaledCurrentY);
-
-                previousPoint = currentPoint;
+            while (pointIter.hasNext()) {
+                Point2D curPoint = pointIter.next();
+                g.drawLine(prevPoint.x, prevPoint.y, curPoint.x, curPoint.y);
+                prevPoint = curPoint;
             }
         }
     }
@@ -94,20 +223,19 @@ public class Main {
         InputStream inputStream = clientSocket.getInputStream();
         OutputStream outputStream = clientSocket.getOutputStream();
 
-        int width_aspect_ratio = inputStream.read();
-        int height_aspect_ratio = inputStream.read();
+        int widthAspectRatio = inputStream.read();
+        int heightAspectRatio = inputStream.read();
 
-        System.out.println("width_aspect_ratio: " + Integer.toString(width_aspect_ratio));
-        System.out.println("height_aspect_ratio: " + Integer.toString(height_aspect_ratio));
+        System.out.println("widthAspectRatio: " + Integer.toString(widthAspectRatio));
+        System.out.println("heightAspectRatio: " + Integer.toString(heightAspectRatio));
 
         outputStream.write(ServerCommands.START);
 
         Frame frame = new Frame("jtouchintpuserver");
 
         CustomCanvas canvas = new CustomCanvas();
-        canvas.width_aspect_ratio = width_aspect_ratio;
-        canvas.height_aspect_ratio = height_aspect_ratio;
-        canvas.strokes = strokes;
+        canvas.setAspectRatio(widthAspectRatio, heightAspectRatio);
+        canvas.setStrokes(strokes);
 
         canvas.setSize(640, 480);
 
