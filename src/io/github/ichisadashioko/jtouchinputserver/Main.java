@@ -4,20 +4,26 @@ import java.awt.Canvas;
 import java.awt.Color;
 import java.awt.Frame;
 import java.awt.Graphics;
+import java.awt.event.WindowListener;
+import java.awt.event.WindowEvent;
+import java.awt.Graphics2D;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Random;
 
 class Point2D {
+
     public int x;
     public int y;
 }
 
 class CustomCanvasState {
+
     public int componentWidth;
     public int componentHeight;
     public int renderWidth;
@@ -58,6 +64,7 @@ class CustomCanvas extends Canvas {
         this.rand = new Random();
         this.widthAspectRatio = 1;
         this.heightAspectRatio = 1;
+        this.strokes = new ArrayList<>();
     }
 
     public Color generateColor() {
@@ -105,8 +112,8 @@ class CustomCanvas extends Canvas {
 
         ArrayList<Point2D> newScaledStroke = new ArrayList<>();
         Point2D scaledPoint = new Point2D();
-        scaledPoint.x = (int) (this.componentState.scaleTmpX * point2d.x);
-        scaledPoint.y = (int) (this.componentState.scaleTmpY * point2d.y);
+        scaledPoint.x = (int) (this.componentState.scaleTmpX * point2d.x) + this.componentState.renderOffsetX;
+        scaledPoint.y = (int) (this.componentState.scaleTmpY * point2d.y) + this.componentState.renderOffsetY;
         newScaledStroke.add(scaledPoint);
         this.componentState.scaledStrokes.add(newScaledStroke);
 
@@ -136,11 +143,11 @@ class CustomCanvas extends Canvas {
 
         this.componentState.scale = Math.min(widthScale, heightScale);
 
-        this.componentState.renderWidth = (int) (componentWidth * this.componentState.scale);
-        this.componentState.renderHeight = (int) (componentHeight * this.componentState.scale);
+        this.componentState.renderWidth = (int) (this.widthAspectRatio * this.componentState.scale);
+        this.componentState.renderHeight = (int) (this.heightAspectRatio * this.componentState.scale);
 
         this.componentState.renderOffsetX = (componentWidth - this.componentState.renderWidth) / 2;
-        this.componentState.renderOffsetY = (componentHeight - this.componentState.renderWidth) / 2;
+        this.componentState.renderOffsetY = (componentHeight - this.componentState.renderHeight) / 2;
 
         this.componentState.scaleTmpX = this.componentState.renderWidth / 256f;
         this.componentState.scaleTmpY = this.componentState.renderHeight / 256f;
@@ -161,12 +168,8 @@ class CustomCanvas extends Canvas {
             while (pointIterator.hasNext()) {
                 Point2D point2d = pointIterator.next();
                 Point2D scaledPoint = new Point2D();
-                scaledPoint.x =
-                        ((int) (point2d.x * this.componentState.scaleTmpX))
-                                + this.componentState.renderOffsetX;
-                scaledPoint.y =
-                        ((int) (point2d.y * this.componentState.scaleTmpY))
-                                + this.componentState.renderOffsetY;
+                scaledPoint.x = ((int) (point2d.x * this.componentState.scaleTmpX)) + this.componentState.renderOffsetX;
+                scaledPoint.y = ((int) (point2d.y * this.componentState.scaleTmpY)) + this.componentState.renderOffsetY;
 
                 scaledStroke.add(scaledPoint);
             }
@@ -177,10 +180,13 @@ class CustomCanvas extends Canvas {
 
     @Override
     public void paint(Graphics g) {
-        super.paint(g);
+        Graphics2D g2 = (Graphics2D) g;
 
         int componentWidth = this.getWidth();
         int componentHeight = this.getHeight();
+
+        g2.setColor(new Color(0, 0, 0));
+        g2.fillRect(0, 0, componentWidth, componentHeight);
 
         if ((componentWidth != this.componentState.componentWidth)
                 || (componentHeight != this.componentState.componentHeight)) {
@@ -197,95 +203,187 @@ class CustomCanvas extends Canvas {
                 continue;
             }
 
-            g.setColor(strokeColor);
+            g2.setColor(strokeColor);
 
             Iterator<Point2D> pointIter = stroke.iterator();
             Point2D prevPoint = pointIter.next();
 
             while (pointIter.hasNext()) {
                 Point2D curPoint = pointIter.next();
-                g.drawLine(prevPoint.x, prevPoint.y, curPoint.x, curPoint.y);
+                g2.drawLine(prevPoint.x, prevPoint.y, curPoint.x, curPoint.y);
                 prevPoint = curPoint;
             }
         }
     }
 }
 
+class TouchInputServerListener implements Runnable {
+    public int socketTimeout;
+    public Socket socket;
+    public boolean shouldContinue;
+
+    public TouchInputServerListener(Socket socket) {
+        this.socketTimeout = 100;
+        this.socket = socket;
+        this.shouldContinue = true;
+    }
+
+    public void run() {
+        int intBuffer;
+        InputStream inputStream;
+        try {
+            this.socket.setSoTimeout(this.socketTimeout);
+            inputStream = this.socket.getInputStream();
+            while (true) {
+                synchronized (this) {
+                    if (!this.shouldContinue) {
+                        break;
+                    }
+                }
+
+                try {
+                    intBuffer = inputStream.read();
+                } catch (SocketTimeoutException socketTimeoutException) {
+                }
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace(System.err);
+        }
+    }
+}
+
+class MainUIWindowListener implements WindowListener {
+    public void windowActivated(WindowEvent evt) {
+
+    }
+
+    public void windowClosed(WindowEvent evt) {
+
+    }
+
+    public void windowClosing(WindowEvent evt) {
+        evt.getWindow().dispose();
+    }
+
+    public void windowDeactivated(WindowEvent evt) {
+
+    }
+
+    public void windowDeiconified(WindowEvent evt) {
+
+    }
+
+    public void windowIconified(WindowEvent evt) {
+
+    }
+
+    public void windowOpened(WindowEvent evt) {
+
+    }
+}
+
+class UIApplication extends Frame {
+    public CustomCanvas renderTouchesCanvas;
+
+    public UIApplication() {
+        super("jtouchinputserver");
+        this.renderTouchesCanvas = new CustomCanvas();
+        this.renderTouchesCanvas.setSize(640, 480);
+        this.add(this.renderTouchesCanvas);
+    }
+}
+
 public class Main {
+
     public static void main(String[] args) throws Exception {
 
-        ArrayList<ArrayList<Point2D>> strokes = new ArrayList<>();
+        UIApplication app = new UIApplication();
 
-        ServerSocket serverSocket = new ServerSocket(9090);
+        MainUIWindowListener mainUIWindowListener = new MainUIWindowListener();
+        app.addWindowListener(mainUIWindowListener);
+        app.pack();
+        app.setVisible(true);
+        // final Frame frame = new Frame("jtouchintpuserver");
+        // final CustomCanvas canvas = new CustomCanvas();
+        // canvas.setSize(640, 480);
+        // frame.add(canvas);
 
-        Socket clientSocket = serverSocket.accept();
+        // Thread serverThread = new Thread(new Runnable() {
+        // @Override
+        // public void run() {
+        // try {
 
-        InputStream inputStream = clientSocket.getInputStream();
-        OutputStream outputStream = clientSocket.getOutputStream();
+        // ServerSocket serverSocket = new ServerSocket(9090);
 
-        int widthAspectRatio = inputStream.read();
-        int heightAspectRatio = inputStream.read();
+        // System.out.println("Waiting for client...");
+        // Socket clientSocket = serverSocket.accept();
 
-        System.out.println("widthAspectRatio: " + Integer.toString(widthAspectRatio));
-        System.out.println("heightAspectRatio: " + Integer.toString(heightAspectRatio));
+        // final InputStream inputStream = clientSocket.getInputStream();
+        // final OutputStream outputStream = clientSocket.getOutputStream();
 
-        outputStream.write(ServerCommands.START);
+        // int widthAspectRatio = inputStream.read();
+        // int heightAspectRatio = inputStream.read();
 
-        Frame frame = new Frame("jtouchintpuserver");
+        // System.out.println("widthAspectRatio: " +
+        // Integer.toString(widthAspectRatio));
+        // System.out.println("heightAspectRatio: " +
+        // Integer.toString(heightAspectRatio));
 
-        CustomCanvas canvas = new CustomCanvas();
-        canvas.setAspectRatio(widthAspectRatio, heightAspectRatio);
-        canvas.setStrokes(strokes);
+        // canvas.setAspectRatio(widthAspectRatio, heightAspectRatio);
 
-        canvas.setSize(640, 480);
+        // outputStream.write(ServerCommands.START);
 
-        frame.add(canvas);
+        // while (true) {
+        // int intBuffer = inputStream.read();
+        // System.out.println(intBuffer);
+        // if (intBuffer < 0) {
+        // break;
+        // }
 
-        frame.setSize(640, 480);
-        frame.setVisible(true);
+        // byte touch_event_type = (byte) (intBuffer & 0b11);
+        // int x_axis_data = (intBuffer & 0b100) >> 2;
+        // int y_axis_data = (intBuffer & 0b1000) >> 3;
+        // int touch_id = intBuffer >> 4;
 
-        ArrayList<Point2D> currentStroke = new ArrayList<>();
-        strokes.add(currentStroke);
+        // if (x_axis_data > 0) {
+        // x_axis_data = inputStream.read() + 1;
+        // }
 
-        while (true) {
-            int intBuffer = inputStream.read();
-            System.out.println(intBuffer);
-            if (intBuffer < 0) {
-                break;
-            }
+        // if (y_axis_data > 0) {
+        // y_axis_data = inputStream.read() + 1;
+        // }
 
-            byte touch_event_type = (byte) (intBuffer & 0b11);
-            int x_axis_data = (intBuffer & 0b100) >> 2;
-            int y_axis_data = (intBuffer & 0b1000) >> 3;
-            int touch_id = intBuffer >> 4;
+        // System.out.println("touch_event_type: " +
+        // Integer.toString(touch_event_type));
+        // System.out.println("touch_id: " + Integer.toString(touch_id));
+        // System.out.println("x_axis_data: " + Integer.toString(x_axis_data));
+        // System.out.println("y_axis_data: " + Integer.toString(y_axis_data));
 
-            if (x_axis_data > 0) {
-                x_axis_data = inputStream.read() + 1;
-            }
+        // Point2D touchPos = new Point2D();
+        // touchPos.x = x_axis_data;
+        // touchPos.y = y_axis_data;
 
-            if (y_axis_data > 0) {
-                y_axis_data = inputStream.read() + 1;
-            }
+        // if (touch_event_type == TouchEvents.TOUCH_DOWN) {
+        // canvas.addNewStroke(touchPos);
+        // } else if (touch_event_type == TouchEvents.TOUCH_MOVE) {
+        // canvas.addNewPoint(touchPos);
+        // } else if (touch_event_type == TouchEvents.TOUCH_UP) {
+        // canvas.addNewPoint(touchPos);
+        // }
+        // }
 
-            System.out.println("touch_event_type: " + Integer.toString(touch_event_type));
-            System.out.println("touch_id: " + Integer.toString(touch_id));
-            System.out.println("x_axis_data: " + Integer.toString(x_axis_data));
-            System.out.println("y_axis_data: " + Integer.toString(y_axis_data));
+        // serverSocket.close();
+        // } catch (Exception ex) {
+        // ex.printStackTrace(System.err);
+        // }
+        // }
+        // });
 
-            Point2D touchPos = new Point2D();
-            touchPos.x = x_axis_data;
-            touchPos.y = y_axis_data;
+        // serverThread.start();
 
-            if (touch_event_type == TouchEvents.TOUCH_DOWN) {
-                currentStroke.add(touchPos);
-            } else if (touch_event_type == TouchEvents.TOUCH_MOVE) {
-                currentStroke.add(touchPos);
-            } else if (touch_event_type == TouchEvents.TOUCH_UP) {
-                currentStroke = new ArrayList<>();
-                strokes.add(currentStroke);
-            }
-        }
+        // frame.setSize(640, 480);
+        // frame.setVisible(true);
 
-        serverSocket.close();
+        // serverThread.join();
     }
 }
