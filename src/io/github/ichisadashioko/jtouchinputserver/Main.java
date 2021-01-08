@@ -243,6 +243,10 @@ class TouchInputServerListener implements Runnable {
 
                 try {
                     intBuffer = inputStream.read();
+
+                    if (intBuffer < 0) {
+                        break;
+                    }
                 } catch (SocketTimeoutException socketTimeoutException) {
                 }
             }
@@ -299,8 +303,7 @@ public class Main {
 
         UIApplication app = new UIApplication();
 
-        MainUIWindowListener mainUIWindowListener = new MainUIWindowListener();
-        app.addWindowListener(mainUIWindowListener);
+        app.addWindowListener(new MainUIWindowListener());
         app.pack();
         app.setVisible(true);
         // final Frame frame = new Frame("jtouchintpuserver");
